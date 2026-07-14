@@ -24,12 +24,14 @@ This will:
 2. Copy `.env.example` → `.env` if missing
 3. Start **one server** on **http://localhost:8000** that serves both the UI and the digital-twin API
 
-Then open:
+Then open (after forwarding port 8000 in Cursor **Ports**, if you are remote):
 
 - **Operations UI:** http://localhost:8000/index.html  
 - **Digital twin:** http://localhost:8000/graph.html  
 
-The digital twin loads a **demo scenario automatically** if you open it directly. For live allocations from the simulation, click **Start scenario** on the Operations UI first, then **Digital twin**.
+**Port:** `8000` only (UI + API together). Port `5500` is no longer used.
+
+If `localhost:8000` shows nothing on your machine, the server is still running in the cloud VM — use Cursor's **Ports** tab → forward **8000** → **Open in Browser**. Or open the URL inside the **Cloud Desktop** browser.
 
 Health check:
 

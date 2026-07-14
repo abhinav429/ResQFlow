@@ -57,10 +57,16 @@ if ! curl -sf "http://127.0.0.1:${API_PORT}/health"; then
 fi
 echo
 echo
-echo "ResQFlow is running:"
+echo "ResQFlow is running on port ${API_PORT} inside this environment."
+echo
 echo "  Operations UI: http://localhost:${API_PORT}/index.html"
 echo "  Digital twin:  http://localhost:${API_PORT}/graph.html"
 echo "  API health:    http://localhost:${API_PORT}/health"
+echo
+echo "IMPORTANT (cloud / remote dev):"
+echo "  localhost:${API_PORT} here is the VM, not your laptop."
+echo "  In Cursor, open the Ports panel and forward port ${API_PORT},"
+echo "  then use the forwarded URL (or open via Cloud Desktop browser)."
 echo
 echo "Digital twin works immediately (demo graph) or after Start scenario on the UI."
 if [[ "${1:-}" == "--background" ]]; then
