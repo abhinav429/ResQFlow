@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Start ResQFlow backend (digital twin API) + static UI server.
-# Usage: ./start.sh
+# Start ResQFlow: API + UI on one port (default 8000).
+# Usage:
+#   ./start.sh              # foreground (Ctrl+C to stop)
+#   ./start.sh --background # detach into tmux session resqflow
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,23 +23,26 @@ if [[ ! -f .env ]]; then
 fi
 
 API_PORT="${PORT:-8000}"
-UI_PORT="${UI_PORT:-5500}"
+RUN_CMD="cd \"$ROOT/backend\" && source \"$ROOT/.venv/bin/activate\" && uvicorn main:app --reload --host 0.0.0.0 --port $API_PORT"
 
-cleanup() {
-  [[ -n "${API_PID:-}" ]] && kill "$API_PID" 2>/dev/null || true
-  [[ -n "${UI_PID:-}" ]] && kill "$UI_PID" 2>/dev/null || true
-}
-trap cleanup EXIT INT TERM
+if [[ "${1:-}" == "--background" ]]; then
+  SESSION_NAME="resqflow"
+  if tmux -f /exec-daemon/tmux.portal.conf has-session -t "=$SESSION_NAME" 2>/dev/null; then
+    echo "ResQFlow already running in tmux session: $SESSION_NAME"
+  else
+    tmux -f /exec-daemon/tmux.portal.conf new-session -d -s "$SESSION_NAME" -c "$ROOT/backend" -- "${SHELL:-bash}" -l
+    tmux -f /exec-daemon/tmux.portal.conf send-keys -t "$SESSION_NAME:0.0" "$RUN_CMD" C-m
+    echo "Started ResQFlow in tmux session: $SESSION_NAME"
+  fi
+else
+  cleanup() {
+    [[ -n "${API_PID:-}" ]] && kill "$API_PID" 2>/dev/null || true
+  }
+  trap cleanup EXIT INT TERM
+  eval "$RUN_CMD" &
+  API_PID=$!
+fi
 
-echo "Starting API on http://localhost:${API_PORT} ..."
-(cd "$ROOT/backend" && uvicorn main:app --reload --host 0.0.0.0 --port "$API_PORT") &
-API_PID=$!
-
-echo "Starting UI on http://localhost:${UI_PORT} ..."
-python3 -m http.server "$UI_PORT" --bind 0.0.0.0 &
-UI_PID=$!
-
-# Wait until health responds (or fail after ~15s)
 for _ in $(seq 1 30); do
   if curl -sf "http://127.0.0.1:${API_PORT}/health" >/dev/null 2>&1; then
     break
@@ -47,17 +52,20 @@ done
 
 if ! curl -sf "http://127.0.0.1:${API_PORT}/health"; then
   echo
-  echo "ERROR: API did not become healthy on port ${API_PORT}."
+  echo "ERROR: ResQFlow did not become healthy on port ${API_PORT}."
   exit 1
 fi
 echo
 echo
 echo "ResQFlow is running:"
-echo "  UI:           http://localhost:${UI_PORT}/index.html"
-echo "  Digital twin: http://localhost:${UI_PORT}/graph.html"
-echo "  API health:   http://localhost:${API_PORT}/health"
+echo "  Operations UI: http://localhost:${API_PORT}/index.html"
+echo "  Digital twin:  http://localhost:${API_PORT}/graph.html"
+echo "  API health:    http://localhost:${API_PORT}/health"
 echo
-echo "Open the UI, click Start scenario, then Digital twin."
-echo "Press Ctrl+C to stop."
-
-wait
+echo "Digital twin works immediately (demo graph) or after Start scenario on the UI."
+if [[ "${1:-}" == "--background" ]]; then
+  echo "Running in background (tmux session: resqflow)."
+else
+  echo "Press Ctrl+C to stop."
+  wait
+fi

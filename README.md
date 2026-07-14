@@ -12,19 +12,24 @@ From the repo root:
 ./start.sh
 ```
 
+Or keep it running in the background:
+
+```bash
+./start.sh --background
+```
+
 This will:
 
 1. Create `.venv` and install `requirements.txt` if needed
 2. Copy `.env.example` → `.env` if missing
-3. Start the API on **http://localhost:8000**
-4. Serve the UI on **http://localhost:5500**
+3. Start **one server** on **http://localhost:8000** that serves both the UI and the digital-twin API
 
 Then open:
 
-- **Operations UI:** http://localhost:5500/index.html  
-- **Digital twin:** http://localhost:5500/graph.html  
+- **Operations UI:** http://localhost:8000/index.html  
+- **Digital twin:** http://localhost:8000/graph.html  
 
-Flow: **Start scenario** → **Digital twin** (or header link).
+The digital twin loads a **demo scenario automatically** if you open it directly. For live allocations from the simulation, click **Start scenario** on the Operations UI first, then **Digital twin**.
 
 Health check:
 
@@ -46,11 +51,14 @@ cd backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-In another terminal (repo root):
+In another terminal (repo root) — only if you are not using `./start.sh`:
 
 ```bash
-python3 -m http.server 5500
+cd backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+The unified server also serves `index.html` and `graph.html` from the repo root on the same port.
 
 ### Backend status in the UI
 
@@ -85,8 +93,8 @@ Traces save to `data/traces/` as JSON for audit replay.
 
 ### Knowledge Graph Explorer (`graph.html`)
 
-1. Run `./start.sh` (or backend + static server as above)
-2. Open **http://localhost:5500/index.html** → **Start scenario**
+1. Run `./start.sh` (or `./start.sh --background`)
+2. Open **http://localhost:8000/index.html** → **Start scenario** (optional for live sync)
 3. Click **Digital twin** / **Graph view**
 4. Pan/zoom the graph, pick incident/trace, inspect evidence path and ripple panel
 

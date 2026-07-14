@@ -342,7 +342,9 @@
 
 
     <script>
-        const API_BASE = "http://localhost:8000";
+        const API_BASE = (window.location.protocol === "file:" || !window.location.hostname)
+            ? "http://127.0.0.1:8000"
+            : window.location.origin;
         const EDGE_TYPES = ["CAN_REACH", "BLOCKED_BY", "COMPETES_FOR", "SUPPORTS", "DISTANCE"];
         const EDGE_COLORS = {
             CAN_REACH: "#22c55e",
@@ -373,6 +375,20 @@
             const focusRaw = sessionStorage.getItem("resqflow_focus");
             if (raw) snapshot = JSON.parse(raw);
             if (focusRaw) focus = JSON.parse(focusRaw);
+        }
+
+        async function ensureSnapshot() {
+            loadSnapshotFromStorage();
+            if (snapshot) return "session";
+
+            try {
+                const res = await fetch(`${API_BASE}/demo/snapshot`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                snapshot = await res.json();
+                return "demo";
+            } catch {
+                return null;
+            }
         }
 
         async function postJson(path, payload) {
@@ -938,16 +954,22 @@
             });
         }
 
-        function init() {
-            loadSnapshotFromStorage();
+        async function init() {
+            const snapshotSource = await ensureSnapshot();
             buildEdgeFilters();
             updateViewHint();
             populateIncidentSelect();
             populateTraceSelect();
 
             if (!snapshot) {
-                document.getElementById("networkMount").innerHTML = '<div class="empty-state">No scenario loaded.<br><a href="index.html">Operations demo</a> → Start scenario → Digital twin</div>';
+                document.getElementById("networkMount").innerHTML = '<div class="empty-state">No scenario loaded.<br>Run <code>./start.sh</code> then open <a href="index.html">Operations demo</a> or refresh this page.</div>';
             } else {
+                if (snapshotSource === "demo") {
+                    const hint = document.getElementById("viewHint");
+                    if (hint) {
+                        hint.textContent = "Demo scenario loaded — start Operations demo to sync live allocations.";
+                    }
+                }
                 fetchGraph();
             }
             window.addEventListener("resize", () => { if (graphData.nodes.length) renderNetwork(); });

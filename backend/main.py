@@ -1,7 +1,11 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from config import LLM_PROVIDER, PORT, llm_configured
+from demo_snapshot import build_demo_snapshot
 from graph import analyze_assignment, build_graph, export_graph_for_viz, get_incident_subgraph, graph_stats, ripple_check
 from graph_store import list_saved_traces, load_saved_trace, save_trace_analysis
 from llm import generate_text
@@ -128,6 +132,16 @@ def graph_trace_detail(trace_id: str):
     if not record:
         return {"error": "trace not found"}
     return record
+
+
+@app.get("/demo/snapshot")
+def demo_snapshot():
+    """Seed scenario for the digital twin when no browser session exists."""
+    return build_demo_snapshot()
+
+
+ROOT = Path(__file__).resolve().parent.parent
+app.mount("/", StaticFiles(directory=str(ROOT), html=True), name="frontend")
 
 
 if __name__ == "__main__":

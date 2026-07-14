@@ -806,7 +806,9 @@
     <script>
         const GRID_SIZE = 50;
         const MAX_INCIDENTS = 10;
-        const API_BASE = "http://localhost:8000";
+        const API_BASE = (window.location.protocol === "file:" || !window.location.hostname)
+            ? "http://127.0.0.1:8000"
+            : window.location.origin;
         // CPS predictive thresholds — tuned for demo flow: seed incidents assign cleanly,
         // late-scenario incidents still commit when a capable resource is nearby, while
         // clearly distant candidates continue to fail ETA (visible repair/rejection path).
@@ -1164,6 +1166,7 @@
             document.getElementById("reportText").textContent = "";
             updateWhatIf();
             renderAll();
+            persistLiveSession();
         }
 
         function seedResources() {
@@ -1811,7 +1814,7 @@
                     setApiStatus("Backend: connected (local text only — add API key to .env)");
                 }
             } catch (error) {
-                setApiStatus("Backend: offline — run ./start.sh to enable digital twin");
+                setApiStatus("Backend: offline — run ./start.sh and open http://localhost:8000");
             }
         }
 
@@ -2345,6 +2348,8 @@
 
         if (!restoreLiveSession()) {
             resetDemo(false);
+        } else {
+            persistLiveSession();
         }
         checkBackendHealth();
         lucide.createIcons();
