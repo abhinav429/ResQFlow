@@ -587,7 +587,7 @@
                     }
                 } catch {
                     graphData = buildGraphFromSnapshot(cleanSnap);
-                    setBackendStatus("Offline — local graph", "err");
+                    setBackendStatus("Offline — run ./start.sh", "err");
                 }
             }
             applyHighlights();
@@ -983,7 +983,7 @@
 
             fetch(`${API_BASE}/health`).then(r => r.json()).then(d => {
                 if (d.graph) setBackendStatus("Connected", "ok");
-            }).catch(() => setBackendStatus("Offline", "err"));
+            }).catch(() => setBackendStatus("Offline — run ./start.sh", "err"));
             lucide.createIcons();
         }
 
